@@ -1,0 +1,36 @@
+# QUICK MODE: a smoke test of the whole pipeline in minutes, not a result.
+#
+#   Windows:    set SAP_CONFIG=configs/quick.yaml  &&  python run.py all
+#   Linux/mac:  SAP_CONFIG=configs/quick.yaml python run.py all
+#
+# Inherits everything from config.yaml and overrides only what is listed here: 400 days of
+# synthetic data, 1 seed, 2 epochs, a small LightGBM. Everything is written to data_quick/
+# and results_quick/ (git-ignored), so it can never overwrite the real results/.
+# The numbers it produces are meaningless (models are barely trained); never report them.
+base: config.yaml
+
+project:
+  seeds: [42]
+
+paths:
+  synthetic: data_quick/synthetic
+  processed: data_quick/processed
+  results: results_quick
+  figures: results_quick/figures
+  checkpoints: results_quick/checkpoints
+
+synthetic:
+  n_days: 400
+
+training:
+  max_epochs: 2
+  patience: 2
+
+baselines:
+  lightgbm:
+    n_estimators: 50
+    early_stopping_rounds: 10
+
+recommender:
+  chroma_dir: results_quick/chroma
+  evaluate_embedders: [tfidf]

@@ -1,0 +1,50 @@
+{
+  "index": {
+    "tickets": 6305,
+    "index_until": "2025-02-06",
+    "test_from": "2025-07-21"
+  },
+  "held_out_tickets": 1287,
+  "query": "{module} | {short_description}",
+  "k": 5,
+  "embedders": {
+    "tfidf": {
+      "status": "ok",
+      "source": "tfidf",
+      "hit@1": 0.9075369075369075,
+      "hit@5": 0.9425019425019425,
+      "precision@5": 0.8881118881118881,
+      "mrr": 0.9203703703703704,
+      "same_module_share@5": 0.8306138306138307,
+      "mean_top1_similarity": 0.8279623154623156,
+      "hit@5_by_category": {
+        "authorisation": 0.8991596638655462,
+        "interface_idoc": 0.930327868852459,
+        "job_failure": 0.9415204678362573,
+        "master_data": 0.9608938547486033,
+        "output_print": 0.875,
+        "performance": 0.9583333333333334,
+        "posting_error": 0.9815384615384616,
+        "transport_change": 0.9135802469135802
+      }
+    },
+    "minilm": {
+      "status": "not available: could not load sentence-transformers/all-MiniLM-L6-v2: OSError"
+    },
+    "minilm_onnx": {
+      "status": "not available: no ONNX model cached and no archive at /sessions/rcw-011nvq6j4cmepd1mec2dp3r6/mnt/capstone/sap-incident-forecasting/models/onnx.tar.gz"
+    }
+  },
+  "baselines": {
+    "random_any_ticket": {
+      "hit@1": 0.15766806107805315,
+      "hit@5": 0.5460014063373302,
+      "precision@5": 0.15766806107805315
+    },
+    "random_same_module": {
+      "hit@1": 0.18254410153549883,
+      "hit@5": 0.5884110024762925,
+      "precision@5": 0.18254410153549883
+    }
+  }
+}

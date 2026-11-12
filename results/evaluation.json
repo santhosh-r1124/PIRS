@@ -1,0 +1,216 @@
+{
+  "data": "SYNTHETIC DATA",
+  "oracle": {
+    "oracle_full": {
+      "h1": {
+        "MAE": 0.6587051663924052,
+        "RMSE": 0.8735618500200478,
+        "PoissonDev": 0.9786416252218778,
+        "P@3": 0.6983122362869199
+      },
+      "h3": {
+        "MAE": 0.656992270443038,
+        "RMSE": 0.873898087305725,
+        "PoissonDev": 0.9749863562061135,
+        "P@3": 0.70042194092827
+      },
+      "h7": {
+        "MAE": 0.6561250794303798,
+        "RMSE": 0.8817487717617221,
+        "PoissonDev": 0.968498913483742,
+        "P@3": 0.7088607594936708
+      }
+    },
+    "oracle_ripple_blind": {
+      "h1": {
+        "MAE": 0.6791452157911656,
+        "RMSE": 0.8990270842805125,
+        "PoissonDev": 1.0135454609841164,
+        "P@3": 0.679324894514768
+      },
+      "h3": {
+        "MAE": 0.6767588850174195,
+        "RMSE": 0.8981234019303918,
+        "PoissonDev": 1.008374513667618,
+        "P@3": 0.681434599156118
+      },
+      "h7": {
+        "MAE": 0.6747839025751946,
+        "RMSE": 0.9044122692441863,
+        "PoissonDev": 1.0002707903207504,
+        "P@3": 0.6835443037974683
+      }
+    },
+    "share_of_variance_predictable": 0.38079579533497265,
+    "ripple_share_of_expected_incidents": 0.329931648091867
+  },
+  "explainability": {
+    "learned_adjacency_gat_transformer": {
+      "runs": 6,
+      "spearman_with_true_W": -0.23369955412984295,
+      "auc_true_edges_vs_non_edges": 0.32820855614973254,
+      "rank_of_hidden_edges_out_of_90": {
+        "MM->PP": 12,
+        "SD->WM": 61
+      },
+      "per_target_spearman_all_sources": -0.2926625065707943
+    },
+    "learned_adjacency_gat_transformer_adaptive": {
+      "runs": 6,
+      "spearman_with_true_W": -0.09370201865212321,
+      "auc_true_edges_vs_non_edges": 0.4375,
+      "rank_of_hidden_edges_out_of_90": {
+        "MM->PP": 58,
+        "SD->WM": 54
+      },
+      "per_target_spearman_all_sources": -0.1838137523592978
+    },
+    "gat_attention": {
+      "runs": 12,
+      "spearman_with_true_strength_on_graph_edges": -0.38016129079984856,
+      "per_target_spearman_on_graph_edges": -0.13348599030802347,
+      "QM->MM_attention (true strength 0)": 0.15523138642311096,
+      "mean_attention_other_edges_into_MM": 0.14414703622460365
+    }
+  },
+  "rolling_origin": [
+    {
+      "model": "historical_mean",
+      "fold1 (2025-05-06..)": 0.6970093223645731,
+      "fold2 (2025-07-05..)": 0.7224238665291557,
+      "fold3 (2025-09-03..)": 0.6942706792442886,
+      "fold4 (2025-11-02..)": 0.7074270077739601,
+      "mean \u00b1 std": "0.705 \u00b1 0.013"
+    },
+    {
+      "model": "lightgbm",
+      "fold1 (2025-05-06..)": 0.685411468069049,
+      "fold2 (2025-07-05..)": 0.6895014762442141,
+      "fold3 (2025-09-03..)": 0.6501202820622856,
+      "fold4 (2025-11-02..)": 0.7118040296546103,
+      "mean \u00b1 std": "0.684 \u00b1 0.026"
+    },
+    {
+      "model": "gat_transformer",
+      "fold1 (2025-05-06..)": 0.6895773385409956,
+      "fold2 (2025-07-05..)": 0.698011627420783,
+      "fold3 (2025-09-03..)": 0.6655114511786787,
+      "fold4 (2025-11-02..)": 0.7164977481795682,
+      "mean \u00b1 std": "0.692 \u00b1 0.021"
+    },
+    {
+      "model": "lstm",
+      "fold1 (2025-05-06..)": 0.6966727848820112,
+      "fold2 (2025-07-05..)": 0.6898677176347485,
+      "fold3 (2025-09-03..)": 0.6583605371691562,
+      "fold4 (2025-11-02..)": 0.713377948615838,
+      "mean \u00b1 std": "0.690 \u00b1 0.023"
+    }
+  ],
+  "ablations": [
+    {
+      "variant": "gat_transformer",
+      "what": "main model: hand-built graph + learned adjacency, 28 days, aux on",
+      "MAE@1 (counts)": "0.713 \u00b1 0.007",
+      "PoissonDev@1 (counts)": "1.091 \u00b1 0.013",
+      "P@3@1 (counts)": "0.671 \u00b1 0.008",
+      "PR_AUC@1 (P1/P2)": "0.239 \u00b1 0.009",
+      "R@3@1 (P1/P2)": "0.456 \u00b1 0.018"
+    },
+    {
+      "variant": "gat_transformer_hand_built",
+      "what": "hand-built graph only",
+      "MAE@1 (counts)": "0.712 \u00b1 0.003",
+      "PoissonDev@1 (counts)": "1.085 \u00b1 0.003",
+      "P@3@1 (counts)": "0.672 \u00b1 0.007",
+      "PR_AUC@1 (P1/P2)": "0.238 \u00b1 0.005",
+      "R@3@1 (P1/P2)": "0.463 \u00b1 0.021"
+    },
+    {
+      "variant": "gat_transformer_adaptive",
+      "what": "learned adjacency only",
+      "MAE@1 (counts)": "0.713 \u00b1 0.001",
+      "PoissonDev@1 (counts)": "1.096 \u00b1 0.011",
+      "P@3@1 (counts)": "0.666 \u00b1 0.005",
+      "PR_AUC@1 (P1/P2)": "0.234 \u00b1 0.006",
+      "R@3@1 (P1/P2)": "0.460 \u00b1 0.018"
+    },
+    {
+      "variant": "gat_transformer_none",
+      "what": "no graph (same network)",
+      "MAE@1 (counts)": "0.709 \u00b1 0.006",
+      "PoissonDev@1 (counts)": "1.083 \u00b1 0.007",
+      "P@3@1 (counts)": "0.670 \u00b1 0.005",
+      "PR_AUC@1 (P1/P2)": "0.251 \u00b1 0.002",
+      "R@3@1 (P1/P2)": "0.491 \u00b1 0.019"
+    },
+    {
+      "variant": "gat_transformer__lb14",
+      "what": "look-back 14 days",
+      "MAE@1 (counts)": "0.709 \u00b1 0.007",
+      "PoissonDev@1 (counts)": "1.100 \u00b1 0.007",
+      "P@3@1 (counts)": "0.663 \u00b1 0.004",
+      "PR_AUC@1 (P1/P2)": "not run",
+      "R@3@1 (P1/P2)": "not run"
+    },
+    {
+      "variant": "gat_transformer__noaux",
+      "what": "without job failures / IDoc errors / change events",
+      "MAE@1 (counts)": "0.713 \u00b1 0.002",
+      "PoissonDev@1 (counts)": "1.093 \u00b1 0.005",
+      "P@3@1 (counts)": "0.668 \u00b1 0.008",
+      "PR_AUC@1 (P1/P2)": "not run",
+      "R@3@1 (P1/P2)": "not run"
+    }
+  ],
+  "ablation_paired_differences": [
+    {
+      "variant": "gat_transformer",
+      "MAE@1 (counts)": "-",
+      "PoissonDev@1 (counts)": "-",
+      "P@3@1 (counts)": "-",
+      "PR_AUC@1 (P1/P2)": "-",
+      "R@3@1 (P1/P2)": "-"
+    },
+    {
+      "variant": "gat_transformer_hand_built",
+      "MAE@1 (counts)": "-0.000 \u00b1 0.007",
+      "PoissonDev@1 (counts)": "-0.007 \u00b1 0.010",
+      "P@3@1 (counts)": "0.001 \u00b1 0.014",
+      "PR_AUC@1 (P1/P2)": "-0.001 \u00b1 0.004",
+      "R@3@1 (P1/P2)": "0.007 \u00b1 0.006"
+    },
+    {
+      "variant": "gat_transformer_adaptive",
+      "MAE@1 (counts)": "0.000 \u00b1 0.007",
+      "PoissonDev@1 (counts)": "0.005 \u00b1 0.002",
+      "P@3@1 (counts)": "-0.005 \u00b1 0.013",
+      "PR_AUC@1 (P1/P2)": "-0.004 \u00b1 0.004",
+      "R@3@1 (P1/P2)": "0.003 \u00b1 0.016"
+    },
+    {
+      "variant": "gat_transformer_none",
+      "MAE@1 (counts)": "-0.004 \u00b1 0.009",
+      "PoissonDev@1 (counts)": "-0.008 \u00b1 0.013",
+      "P@3@1 (counts)": "-0.001 \u00b1 0.012",
+      "PR_AUC@1 (P1/P2)": "0.013 \u00b1 0.008",
+      "R@3@1 (P1/P2)": "0.034 \u00b1 0.036"
+    },
+    {
+      "variant": "gat_transformer__lb14",
+      "MAE@1 (counts)": "-0.004 \u00b1 0.005",
+      "PoissonDev@1 (counts)": "0.008 \u00b1 0.013",
+      "P@3@1 (counts)": "-0.008 \u00b1 0.006",
+      "PR_AUC@1 (P1/P2)": "-",
+      "R@3@1 (P1/P2)": "-"
+    },
+    {
+      "variant": "gat_transformer__noaux",
+      "MAE@1 (counts)": "0.000 \u00b1 0.009",
+      "PoissonDev@1 (counts)": "0.002 \u00b1 0.008",
+      "P@3@1 (counts)": "-0.003 \u00b1 0.005",
+      "PR_AUC@1 (P1/P2)": "-",
+      "R@3@1 (P1/P2)": "-"
+    }
+  ]
+}

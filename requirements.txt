@@ -1,0 +1,45 @@
+# SAP-Centric Predictive Incident Resolution System — pinned dependencies
+# Target: Python 3.11, CPU only (10 nodes x ~1,000 days does not need a GPU).
+#
+# Why the extra index: it serves CPU-only PyTorch wheels (~200 MB) for Linux,
+# Windows and macOS. Without it, Linux would download the ~2.5 GB CUDA build.
+--extra-index-url https://download.pytorch.org/whl/cpu
+
+# --- Deep learning -----------------------------------------------------------
+torch==2.6.0
+torch_geometric==2.6.1             # pure Python; needs no torch_scatter / torch_sparse
+# PyTorch Geometric Temporal is NOT used: STGCN and DCRNN are implemented on plain PyG in
+# src/models/stgnn.py (Phase 5), because its torch-sparse dependency could not be installed
+# reliably. To add it back for comparison, see docs/phase_log.md (Phase 0 and Phase 9).
+
+# --- Data, classical ML, statistics -----------------------------------------
+numpy==2.2.5
+pandas==2.2.3
+scipy==1.15.2
+scikit-learn==1.6.1
+lightgbm==4.6.0
+statsmodels==0.14.4
+networkx==3.4.2
+pyyaml==6.0.2
+
+# --- Plots -------------------------------------------------------------------
+matplotlib==3.10.1
+plotly==5.24.1
+
+# --- Resolution recommender --------------------------------------------------
+sentence-transformers==4.1.0
+transformers==4.51.3
+chromadb==0.6.3
+posthog==5.4.0                     # chromadb 0.6.3 calls the pre-6.0 capture() API
+
+# --- API and dashboard -------------------------------------------------------
+fastapi==0.115.12
+uvicorn==0.34.2
+pydantic==2.10.6
+httpx==0.28.1                      # used by FastAPI's TestClient
+requests==2.32.3
+streamlit==1.45.1
+
+# --- Quality -----------------------------------------------------------------
+pytest==8.3.5
+ruff==0.11.8

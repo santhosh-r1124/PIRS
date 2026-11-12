@@ -1,0 +1,272 @@
+# Single configuration file for every stage of the project.
+# Rule: code reads values from here; nothing experiment-related is hard-coded.
+# Sections are added phase by phase (generator, features, models, ...).
+
+project:
+  name: sap-incident-forecasting
+  seed: 42                 # global seed used by src.utils.set_seed
+  seeds: [42, 43, 44]      # repeated runs for "mean ± std over 3 seeds" (Phase 6)
+
+paths:                     # relative to the repository root
+  raw: data/raw
+  synthetic: data/synthetic
+  processed: data/processed
+  results: results
+  figures: results/figures
+  checkpoints: results/checkpoints   # model weights (git-ignored)
+
+data:
+  source: synthetic        # synthetic | real  (real = CSV export mapped by load_real.py)
+  modules: [FI, CO, SD, MM, PP, WM, QM, PM, HCM, BASIS]
+  priorities: [P1, P2, P3, P4]
+  categories:
+    - job_failure          # background job cancelled / stuck
+    - interface_idoc       # IDoc, RFC, queue or EDI error
+    - authorisation        # missing role / access denied
+    - performance          # slow transaction, timeout, memory dump
+    - master_data          # wrong / missing master data
+    - posting_error        # document cannot be posted (period, account determination, ...)
+    - output_print         # print, form or e-mail output problem
+    - transport_change     # regression after a transport / deployment
+
+calendar:
+  # Month-end close window = last N working days of a month + first M working days of
+  # the next month (working day = Monday-Friday; public holidays are not modelled).
+  close_last_working_days: 3
+  close_first_working_days: 2
+  quarter_end_months: [3, 6, 9, 12]
+
+graph:
+  edge_weights: binary     # binary | cooccurrence (lagged co-occurrence, training period only)
+  cooccurrence_max_lag: 3  # days: source incidents on day t vs target incidents on t+1..t+lag
+  # Directed edge [A, B] = "a problem in A can ripple into B", following SAP
+  # document/data flow (A posts to, feeds, or hosts B). Edit freely.
+  edges:
+    - [SD, FI]       # billing documents post to accounting
+    - [SD, CO]       # billing feeds profitability analysis (CO-PA)
+    - [SD, MM]       # delivery goods issue posts an inventory movement
+    - [MM, FI]       # goods receipt / invoice verification post to FI
+    - [MM, CO]       # material consumption is charged to cost objects
+    - [PP, MM]       # production orders issue components / receive finished goods
+    - [PP, CO]       # production order costing and settlement
+    - [WM, MM]       # warehouse movements update inventory management
+    - [QM, MM]       # inspection lots block / release stock
+    - [PM, MM]       # maintenance orders reserve and consume spare parts
+    - [HCM, FI]      # payroll results post to the general ledger
+    - [FI, CO]       # primary costs flow from FI into CO
+    # BASIS is the technical platform (jobs, RFC/IDoc, performance, transports),
+    # so a BASIS problem can affect every functional module.
+    - [BASIS, FI]
+    - [BASIS, CO]
+    - [BASIS, SD]
+    - [BASIS, MM]
+    - [BASIS, PP]
+    - [BASIS, WM]
+    - [BASIS, QM]
+    - [BASIS, PM]
+    - [BASIS, HCM]
+
+synthetic:
+  # SYNTHETIC DATA. Every number below is an assumption chosen to look plausible for a
+  # mid-size SAP landscape. None of it is measured from a real system.
+  start_date: "2023-01-01"
+  n_days: 1096                   # 3 years: 2023-01-01 .. 2025-12-31
+  base_rate:                     # mean incidents per weekday before any other effect
+    FI: 1.0
+    CO: 0.5
+    SD: 0.9
+    MM: 0.9
+    PP: 0.5
+    WM: 0.35
+    QM: 0.2
+    PM: 0.25
+    HCM: 0.4
+    BASIS: 0.6
+  weekend_factor: {default: 0.3, HCM: 0.2, BASIS: 0.8}   # BASIS jobs run all week
+  monday_factor: 1.2             # backlog raised after the weekend
+  close_factor: {FI: 1.8, CO: 1.7, SD: 1.4}             # month-end close multiplier
+  quarter_end_factor: 1.25       # extra multiplier at quarter-end close (same modules)
+  latent_stress:                 # hidden AR(1) "system health" state per module; it
+    phi: 0.9                     # scales incident rates and is partly visible through
+    sigma: 0.15                  # job failures and IDoc errors (the auxiliary signals)
+  lag_kernel: [0.5, 0.3, 0.2]    # share of an effect landing 1, 2 and 3 days later
+  change:
+    daily_prob: {default: 0.04, BASIS: 0.07}   # P(transport/deployment) per module per weekday
+    uplift: 1.5                  # expected extra incidents per change, spread by lag_kernel
+  # TRUE propagation strengths [source, target, strength] = expected extra incidents in the
+  # target per incident in the source (spread by lag_kernel). This is the ground truth the
+  # models are later checked against. It deliberately differs from graph.edges:
+  #   * QM -> MM is in the hand-built graph but has no real effect (strength 0);
+  #   * SD -> WM and MM -> PP are real effects missing from the hand-built graph.
+  propagation:
+    - [SD, FI, 0.30]
+    - [SD, CO, 0.15]
+    - [SD, MM, 0.20]
+    - [MM, FI, 0.25]
+    - [MM, CO, 0.15]
+    - [PP, MM, 0.25]
+    - [PP, CO, 0.15]
+    - [WM, MM, 0.20]
+    - [QM, MM, 0.00]
+    - [PM, MM, 0.15]
+    - [HCM, FI, 0.20]
+    - [FI, CO, 0.30]
+    - [BASIS, FI, 0.12]
+    - [BASIS, CO, 0.12]
+    - [BASIS, SD, 0.12]
+    - [BASIS, MM, 0.12]
+    - [BASIS, PP, 0.12]
+    - [BASIS, WM, 0.12]
+    - [BASIS, QM, 0.12]
+    - [BASIS, PM, 0.12]
+    - [BASIS, HCM, 0.12]
+    - [SD, WM, 0.25]             # hidden: outbound deliveries create WM transfer orders
+    - [MM, PP, 0.20]             # hidden: material shortages block production orders
+  priority:
+    probs:                       # P1, P2, P3, P4
+      default: [0.03, 0.12, 0.45, 0.40]
+      BASIS: [0.08, 0.20, 0.42, 0.30]
+    close_p1p2_boost: 1.6        # P1/P2 weight multiplier during close (close_factor modules)
+  resolution_hours_median: {P1: 4, P2: 16, P3: 48, P4: 120}
+  aux:
+    job_failures_base: {default: 1.0, FI: 1.5, PP: 1.5, HCM: 1.5, BASIS: 4.0}
+    idoc_errors_base: {default: 0.3, FI: 1.0, SD: 3.0, MM: 2.5, WM: 1.5, HCM: 0.5, BASIS: 1.0}
+    per_incident: 2.0            # extra failures/errors per job_failure / interface_idoc incident
+  vague_description_share: 0.10  # tickets whose text gives no clue about the category
+
+real_data:
+  # Adapter for a CSV export (ServiceNow, SAP Solution Manager, ...). Skipped if missing.
+  incidents_csv: data/raw/incidents.csv
+  signals_csv: data/raw/daily_signals.csv   # optional: date, module, job_failures, ...
+  datetime_format: null          # e.g. "%d-%m-%Y %H:%M:%S"; null lets pandas infer
+  drop_unknown_modules: true     # exports usually contain non-SAP tickets too
+  column_map:                    # schema column: column name in the export (ServiceNow example)
+    incident_id: number
+    created_at: opened_at
+    module: assignment_group
+    priority: priority
+    category: subcategory
+    short_description: short_description
+    resolution_notes: close_notes
+    resolved_at: resolved_at
+  value_maps:                    # export value: schema value
+    priority:
+      "1 - Critical": P1
+      "2 - High": P2
+      "3 - Moderate": P3
+      "4 - Low": P4
+    module:
+      "SAP FI Support": FI
+      "SAP CO Support": CO
+      "SAP SD Support": SD
+      "SAP MM Support": MM
+      "SAP PP Support": PP
+      "SAP WM Support": WM
+      "SAP QM Support": QM
+      "SAP PM Support": PM
+      "SAP HCM Support": HCM
+      "SAP Basis": BASIS
+    category: {}
+
+dataset:
+  lookback: 28             # days of history the model sees (ablation: 14)
+  horizons: [1, 3, 7]      # reported horizons; models predict every day 1..max(horizons)
+  target: regression       # regression (count on day t+h) | classification (>=1 P1/P2 on day t+h;
+                           # the headline metric uses h = 1, i.e. "in the next 24 hours")
+  use_aux: true            # ablation switch: job failures, IDoc errors, change events
+  rolling_windows: [7, 14, 28]          # rolling means of the daily total (past days only)
+  tabular_lags: [0, 1, 2, 3, 4, 5, 6, 13, 27]   # days before the forecast origin (LightGBM)
+  split:                   # strictly chronological, never shuffled
+    train: 0.70
+    val: 0.15
+    test: 0.15
+  rolling_origin:          # forward-moving folds: train on everything before, then val, then test
+    n_folds: 4
+    val_days: 60
+    test_days: 60
+
+evaluation:
+  precision_at_k: 3        # "of the 3 modules flagged riskiest each day, how many had an incident"
+  deviance_floor: 0.05     # predictions floored at this value for the Poisson deviance only
+                           # (a point forecast of 0 would give infinite deviance)
+  # classification recall/precision use the threshold that maximises F1 on the validation split
+
+training:                  # shared by every neural model (src/models/trainer.py)
+  batch_size: 32
+  max_epochs: 150
+  patience: 15             # early stopping on validation loss; best weights restored
+  lr: 0.001
+  weight_decay: 0.0001
+  lr_factor: 0.5           # halve the learning rate ...
+  lr_patience: 5           # ... after 5 epochs without validation improvement
+  grad_clip: 1.0
+  pos_weight: auto         # classification: weight positives by negatives / positives (train)
+  threads: 2               # CPU threads for torch
+
+models:
+  lstm:
+    d_model: 64
+    layers: 1
+    dropout: 0.1
+    module_emb: 8
+  transformer:
+    d_model: 64
+    layers: 2
+    heads: 4
+    ff: 128
+    dropout: 0.1
+    module_emb: 8
+  gat_transformer:         # main model; variants gat_transformer_<mode> override `graph`
+    graph: both            # hand_built | adaptive | both | none (= ablation without graph)
+    d_model: 64
+    heads: 4               # GAT heads and Transformer heads
+    layers: 2              # Transformer layers (one GAT layer per day)
+    ff: 128
+    dropout: 0.1
+    module_emb: 8
+    adj_dim: 8             # size of the node embeddings behind the learned adjacency
+  stgcn:                   # STGCN-style (src/models/stgnn.py); undirected SAP graph
+    d_model: 64
+    kt: 3                  # temporal kernel width (days)
+    cheb_k: 3              # Chebyshev order = graph hops per spatial convolution
+    blocks: 2
+    dropout: 0.1
+    module_emb: 8
+  dcrnn:                   # DCRNN-style (src/models/stgnn.py); directed SAP graph
+    d_model: 64
+    diffusion_k: 2         # random-walk steps forward and backward along the edges
+    dropout: 0.1
+    module_emb: 8
+
+baselines:
+  lightgbm:                # one global model per forecast day; module is a categorical feature
+    n_estimators: 2000     # upper bound; early stopping on the validation split picks the number
+    early_stopping_rounds: 100
+    learning_rate: 0.03
+    num_leaves: 15
+    min_child_samples: 20
+    subsample: 0.8
+    subsample_freq: 1
+    colsample_bytree: 0.8
+
+recommender:
+  # Embedders: minilm      = sentence-transformers all-MiniLM-L6-v2 (local copy or Hub)
+  #            minilm_onnx = the same model as ChromaDB's ONNX build (sha256-checked file)
+  #            tfidf       = keyword baseline (scikit-learn), needs no download
+  embedder: tfidf          # used by the API; minilm / minilm_onnx once the model is available
+  evaluate_embedders: [tfidf, minilm, minilm_onnx]   # those not available are reported as such
+  model_name: sentence-transformers/all-MiniLM-L6-v2
+  model_dir: models/all-MiniLM-L6-v2      # used instead of the Hub if it exists (offline)
+  onnx_archive: models/onnx.tar.gz        # Chroma's all-MiniLM-L6-v2 ONNX archive, if provided
+  tfidf_max_features: 3000
+  chroma_dir: results/chroma              # git-ignored; rebuilt by build_index
+  top_k: 5
+  # what gets embedded: past tickets include their category; a new ticket's category is
+  # usually unknown, so queries (and the evaluation) use only module + description
+  index_text: "{module} | {category} | {short_description}"
+  query_text: "{module} | {short_description}"
+  llm_summary: false                      # optional LLM summary of the fixes: NOT implemented
+
+api:
+  model: gat_transformer   # neural model served by /forecast and /explain (needs its checkpoints)
+  seed: 42                 # which seed's checkpoint to serve

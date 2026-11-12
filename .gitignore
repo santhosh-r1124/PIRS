@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+
+# Tool caches
+.pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Data: raw exports may be confidential; generated data is reproducible from the seed
+data/raw/*
+data/synthetic/*
+data/processed/*
+!data/**/.gitkeep
+
+# Large or rebuildable outputs (results/*.json, *.csv, *.png and summary.md ARE committed)
+results/checkpoints/
+results/chroma/
+
+# Quick-mode smoke run (configs/quick.yaml): meaningless numbers, never committed
+data_quick/
+results_quick/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Downloaded model files (large, rebuildable)
+/models/

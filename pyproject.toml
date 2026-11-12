@@ -1,0 +1,18 @@
+# Tool settings only (pytest, ruff). Dependencies live in requirements.txt.
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-ra"
+markers = [
+    "env: checks the installed ML stack (torch / PyG and pinned versions)",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = ["notebooks"]
+
+[tool.ruff.lint]
+# E/F: pycodestyle + pyflakes, I: import order, B: bug-prone patterns, UP: modern syntax
+select = ["E", "F", "I", "B", "UP"]
